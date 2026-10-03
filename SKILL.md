@@ -6,7 +6,7 @@ description: >-
   supply chain, LLM keys, host exposure, and leftover mock/TODO auth. Don't use
   for a deep authorized pentest (use fable-pentest) or a full OWASP practitioner
   audit with CVSS/ASVS reports (use fable-securityaudit).
-version: 2.0.0
+version: 2.1.0
 compatibility: cursor, claude
 ---
 
@@ -97,10 +97,14 @@ Hunt: `queryRawUnsafe`, `dangerouslySetInnerHTML`, `innerHTML`, `eval(`, `fetch(
 | D-03 | **Hash passwords** `(orig 15)` | Modern hash (argon2/bcrypt/scrypt); never plain text or reversible encryption. |
 | D-04 | **Session hygiene** | Idle/absolute expiry; rotate session ID on login; logout invalidates server-side. |
 | D-05 | **Lockout, enumeration, resets** | Auth endpoints lock or slow down after failures. Errors do not reveal whether an email exists. Reset tokens are random, single-use, short-lived, stored hashed. |
-| D-06 | **JWT and OAuth** | JWT: explicit `alg`, expiry, issuer/audience, strong secret. OAuth: redirect URI allowlist; no `redirect_uri` open redirect. |
+| D-06 | **JWT (app-issued)** | JWT: explicit `alg`, expiry, issuer/audience, strong secret; reject `none` / confused algorithms. N/A if the app does not issue JWTs. |
 | D-07 | **Password policy and admin MFA** | Minimum length + breached-password check where feasible. MFA required for admin/owner roles. |
+| D-08 | **Google OAuth redirect URIs** | N/A if the app does not use Google Sign-In / Google OAuth. In Google Cloud Console, OAuth client redirect URIs are an exact allowlist for known app origins only (no `*`, no open patterns, no stray `http://localhost` on production clients unless documented dev-only). App code must not honor a client-supplied `redirect_uri` without validating it against that same allowlist on the server. **Pass:** Console URIs and server callback validation match production/staging hosts with evidence (`path:line` or config). **Fail:** Wildcard/extra URIs, or redirect target taken from the query/body without allowlist. **Fix:** Remove unused URIs in Console; validate `redirect_uri` server-side against a fixed list; use framework defaults that pin the callback URL. |
+| D-09 | **Google OAuth `state` (CSRF)** | N/A if no Google OAuth. Authorization URL includes a cryptographically random `state` stored server-side (session or signed cookie) before redirecting to Google; callback handler compares incoming `state` and aborts before code exchange or session creation when missing or mismatched. Public/SPA clients should also use PKCE (`code_challenge` / `code_verifier`) per Google’s OAuth guidance. **Pass:** `state` generated, bound to the user agent, and verified on callback (`path:line`). **Fail:** No `state`, static/predictable `state`, or callback never validates it. **Fix:** Generate `state` per login attempt; verify on callback; reject the flow on mismatch. |
+| D-10 | **Google OAuth scopes** | N/A if no Google OAuth. Request the minimum scopes: typically `openid` plus `email` / `profile` (or equivalent userinfo scopes) for sign-in only. **Pass:** Authorize URL / client config lists only needed scopes with evidence. **Fail:** Broad or sensitive scopes (Gmail, Drive, Calendar, `https://www.googleapis.com/auth/...` admin scopes) without a documented product feature that needs them. **Fix:** Drop unused scopes in code and in the Google Cloud OAuth consent screen; re-consent users if you had over-scoped before. |
+| D-11 | **Verify Google ID token server-side** | N/A if no Google OAuth. After sign-in, identity comes from a **server-verified** Google ID token (or token endpoint response verified the same way)—not from trusting `email`, `sub`, or raw token fields posted from the browser. Verify signature (Google JWKS), `iss` is `accounts.google.com` or `https://accounts.google.com`, `aud` matches your OAuth client ID, `exp` (and `nbf` if present) are valid, and `email_verified` is true when email is used to create or match accounts. **Pass:** Server path calls Google’s verifier library or equivalent JWKS validation before creating a session (`path:line`). **Fail:** Login API trusts client JSON, decodes JWT without signature check, skips `aud`/`iss`/`exp`, or ignores `email_verified`. **Fix:** Verify the ID token on the server; bind sessions only to verified claims; never use client-supplied email/`sub` as proof of identity. |
 
-Hunt: `localStorage.setItem`, `jwt.sign`, `algorithm: 'none'`, `bcrypt`, `password.reset`.
+Hunt: `localStorage.setItem`, `jwt.sign`, `algorithm: 'none'`, `bcrypt`, `password.reset`, `accounts.google.com`, `googleusercontent`, `client_id`, `redirect_uri`, `state`, `scope=`, `id_token`, `verifyIdToken`, `OAuth2Client`, `GoogleAuth`, `openid`, `passport-google`, `next-auth/providers/google`, `@react-oauth/google`, `gsi/client`.
 
 ### E — Secrets, debug, logs
 
@@ -209,8 +213,8 @@ Record: status code, notable headers (`strict-transport-security`, `content-secu
 
 | Severity | Use when |
 |----------|----------|
-| Critical | Unauth RCE, auth bypass, world-readable secrets/PII, public admin, SQLi/command injection, service-role in the client |
-| High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth |
+| Critical | Unauth RCE, auth bypass, world-readable secrets/PII, public admin, SQLi/command injection, service-role in the client, Google (or other OAuth) login that trusts client-sent `email`/`sub` or an ID token without server-side signature and `iss`/`aud`/`exp`/`email_verified` checks |
+| High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth, missing or unvalidated OAuth `state` on Google/social sign-in (callback proceeds without CSRF binding), Google OAuth redirect URIs overly broad or client-controlled without server allowlist |
 | Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested |
 | Low | Info leaks, missing MFA on admin, SRI gaps, incomplete audit logs |
 

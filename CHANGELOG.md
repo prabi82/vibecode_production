@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.0 — 2026-10-03
+
+Google Sign-In / OAuth production checks in section D (common vibe-coded mistakes):
+
+- **D-08** — Google OAuth redirect URI allowlist (Console + server-side validation)
+- **D-09** — OAuth `state` (and PKCE where applicable) on authorization callback
+- **D-10** — Minimum Google OAuth scopes for sign-in-only flows
+- **D-11** — Server-side Google ID token verification (`iss`, `aud`, `exp`, signature, `email_verified`)
+- **D-06** narrowed to app-issued JWTs; hunt strings extended for Google OAuth
+- Severity rubric: unverified ID token / client-trusted identity → Critical; missing `state` or open redirect URI handling → High
+
 ## 2.0.0 — 2026-09-20
 
 Expanded the 19-item vibe-coded security checklist into a stack-aware production-readiness skill (~50 items).
