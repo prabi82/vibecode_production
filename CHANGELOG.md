@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.0 — 2026-10-03
+
+Eight additional vibe-coded production checks:
+
+- **A-07** — RLS own-row updates cannot mutate privileged columns (`role`, `plan`, `credits`, `is_admin`, etc.); Pass requires second-account verification
+- **A-08** — Separate public uploads from private backups/config; signed URLs with expiry; access logging
+- **B-06** — No third-party scripts on login, checkout, or admin (CSP elsewhere does not satisfy)
+- **C-06** — Transactional email: user-controlled fields rendered as text, not raw HTML
+- **D-12** — Per-handler auth; middleware matcher gaps (Next.js API routes, path variants)
+- **D-13** — PKCE required for public/mobile OAuth clients (not optional with `state` alone)
+- **E-06** — Server Components / APIs select only fields the UI needs (no password hash leakage)
+- **J-04** — Agents use scoped short-lived credentials, human approval for prod side effects, per-session audit logs
+- Severity rubric updated for the new failure modes
+
 ## 2.1.0 — 2026-10-03
 
 Google Sign-In / OAuth production checks in section D (common vibe-coded mistakes):
