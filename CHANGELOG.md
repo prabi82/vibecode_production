@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.1 — 2026-10-08
+
+- **F-01** strengthened: rate limits on public ID/search reads (cache-penetration / DB miss floods), per-IP and per-user keys, short TTL negative caching when a cache layer exists; Bloom filters noted as optional only
+- Phase 3 **Medium** severity: unlimited public lookups without limits (F-01)
+
 ## 2.2.0 — 2026-10-03
 
 Eight additional vibe-coded production checks:

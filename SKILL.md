@@ -6,7 +6,7 @@ description: >-
   supply chain, LLM keys, host exposure, and leftover mock/TODO auth. Don't use
   for a deep authorized pentest (use fable-pentest) or a full OWASP practitioner
   audit with CVSS/ASVS reports (use fable-securityaudit).
-version: 2.2.0
+version: 2.2.1
 compatibility: cursor, claude
 ---
 
@@ -129,13 +129,13 @@ Hunt: `process.env.NEXT_PUBLIC_`, `console.log(.*password|token|secret`, `APP_DE
 
 | ID | Check | How to verify |
 |----|-------|---------------|
-| F-01 | **Rate limit requests** `(orig 12)` | Auth, signup, password reset, uploads, and public APIs have limits / WAF / abuse protection. |
+| F-01 | **Rate limit requests** `(orig 12)` | N/A only when the app has no HTTP APIs and no user-facing reads (static site with no backend). Rate limits and abuse controls cover **auth** (login, signup, password reset), **uploads**, and **public read endpoints**—not just generic “public APIs.” Include lookup-by-ID routes (e.g. `/api/items/:id`, `/users/:uuid`) and **search** (`?q=`, `/search`, GraphQL list queries) that hit the database. **Pass:** Limits are enforced **per IP** and **per authenticated user** (when signed in) so one client cannot drive a DB query on every request with random or nonexistent IDs; evidence at middleware/WAF/edge or handler (`path:line` or config). **Fail:** Only auth routes limited; ID/search endpoints unlimited; limits global-only with no per-IP key. **Fix:** Add edge or app rate limits on hot read/search routes; key by IP + user id; tune WAF/bot rules. **Cache (N/A if no Redis/Upstash/KV/CDN read cache):** Misses for unknown IDs should be cached briefly as “not found” (short TTL) so repeat lookups skip the DB; optional Bloom filters at very large scale are fine but not required. Default severity if fail: **High** for missing limits on auth endpoints; **Medium** for unlimited public ID/search lookups that query the database on every cache miss. |
 | F-02 | **Verify webhook signatures** `(orig 16)` | Inbound webhooks check provider signatures and timestamps before trusting the body. |
 | F-03 | **Webhook replay** | Reject old timestamps; persist event IDs so the same event is not applied twice. |
 | F-04 | **Server-side prices** | Amounts, SKUs, and discounts are computed on the server; client-sent prices are ignored. |
 | F-05 | **Idempotency and auth cache** | Payment/order POSTs accept idempotency keys. Authenticated HTML/JSON is `Cache-Control: private, no-store`. |
 
-Hunt: `webhook`, `stripe.webhooks`, `req.body.price`, `idempotency`.
+Hunt: `webhook`, `stripe.webhooks`, `req.body.price`, `idempotency`, `ratelimit`, `@upstash/ratelimit`, `express-rate-limit`, `redis.get`, `setex`, `/api/`, `search`, `findUnique`.
 
 ### G — Supply chain
 
@@ -225,7 +225,7 @@ Record: status code, notable headers (`strict-transport-security`, `content-secu
 |----------|----------|
 | Critical | Unauth RCE, auth bypass, world-readable secrets/PII, public admin, SQLi/command injection, service-role in the client, Google (or other OAuth) login that trusts client-sent `email`/`sub` or an ID token without server-side signature and `iss`/`aud`/`exp`/`email_verified` checks, password hashes or API secrets in API/RSC responses (E-06), public object storage holding backups/config (A-08), agents/automations using human or service-role credentials for prod writes (J-04) |
 | High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth, missing or unvalidated OAuth `state` on Google/social sign-in (callback proceeds without CSRF binding), Google OAuth redirect URIs overly broad or client-controlled without server allowlist, RLS/profile self-update that allows `role`/`plan`/`credits`/`is_admin` bumps (A-07), sensitive routes relying on middleware only (D-12), third-party scripts on login/checkout/admin (B-06), OAuth public client without PKCE (D-13), phishing-capable transactional email HTML (C-06) |
-| Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested |
+| Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested, unlimited public lookup-by-ID or search endpoints that hit the database on every nonexistent-ID miss without rate limits (F-01) |
 | Low | Info leaks, missing MFA on admin, SRI gaps, incomplete audit logs |
 
 **Verdict**
