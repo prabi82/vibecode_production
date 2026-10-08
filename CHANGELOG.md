@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.2.1 — 2026-10-08
+
+- **F-01** strengthened: rate limits on public ID/search reads (cache-penetration / DB miss floods), per-IP and per-user keys, short TTL negative caching when a cache layer exists; Bloom filters noted as optional only
+- Phase 3 **Medium** severity: unlimited public lookups without limits (F-01)
+
+## 2.2.0 — 2026-10-03
+
+Eight additional vibe-coded production checks:
+
+- **A-07** — RLS own-row updates cannot mutate privileged columns (`role`, `plan`, `credits`, `is_admin`, etc.); Pass requires second-account verification
+- **A-08** — Separate public uploads from private backups/config; signed URLs with expiry; access logging
+- **B-06** — No third-party scripts on login, checkout, or admin (CSP elsewhere does not satisfy)
+- **C-06** — Transactional email: user-controlled fields rendered as text, not raw HTML
+- **D-12** — Per-handler auth; middleware matcher gaps (Next.js API routes, path variants)
+- **D-13** — PKCE required for public/mobile OAuth clients (not optional with `state` alone)
+- **E-06** — Server Components / APIs select only fields the UI needs (no password hash leakage)
+- **J-04** — Agents use scoped short-lived credentials, human approval for prod side effects, per-session audit logs
+- Severity rubric updated for the new failure modes
+
+## 2.1.0 — 2026-10-03
+
+Google Sign-In / OAuth production checks in section D (common vibe-coded mistakes):
+
+- **D-08** — Google OAuth redirect URI allowlist (Console + server-side validation)
+- **D-09** — OAuth `state` (and PKCE where applicable) on authorization callback
+- **D-10** — Minimum Google OAuth scopes for sign-in-only flows
+- **D-11** — Server-side Google ID token verification (`iss`, `aud`, `exp`, signature, `email_verified`)
+- **D-06** narrowed to app-issued JWTs; hunt strings extended for Google OAuth
+- Severity rubric: unverified ID token / client-trusted identity → Critical; missing `state` or open redirect URI handling → High
+
 ## 2.0.0 — 2026-09-20
 
 Expanded the 19-item vibe-coded security checklist into a stack-aware production-readiness skill (~50 items).
