@@ -3,10 +3,10 @@ name: vibecode-production
 description: >-
   Use when reviewing a vibe-coded or AI-generated app before or after production
   deploy: RLS, secrets, auth, XSS, CSRF, headers, rate limits, uploads, webhooks,
-  supply chain, LLM keys, host exposure, and leftover mock/TODO auth. Don't use
+  supply chain, LLM keys, host exposure, legal/compliance hygiene, and leftover mock/TODO auth. Don't use
   for a deep authorized pentest (use fable-pentest) or a full OWASP practitioner
   audit with CVSS/ASVS reports (use fable-securityaudit).
-version: 2.0.0
+version: 2.3.0
 compatibility: cursor, claude
 ---
 
@@ -179,6 +179,27 @@ Mark N/A if the app has no model/API calls.
 
 Hunt: `TODO: add auth`, `FIXME`, `bypassAuth`, `SKIP_AUTH`, `allowAll`, `password123`, `admin@example.com`, `console.log`.
 
+### L — Legal and compliance
+
+These checks are **verifiable from code and the live site** — they are not legal advice. Have a qualified lawyer review privacy-policy, terms, and marketing wording before launch. Mark **N/A** with a reason when the app has no payments, no AI chat, or no personal data.
+
+**Typical exposure (not exact figures):** intentional CCPA violations are often on the order of several thousand dollars each; statutory data-breach damages can reach a few hundred dollars per consumer; FTC civil penalties for fake reviews or negative-option billing are often tens of thousands of dollars per violation; companion-chatbot laws (e.g. California SB 243) may impose per-violation damages — **check current statutes and agency guidance before quoting amounts to a client.**
+
+**Recurring review:** Re-read the privacy policy, terms, and DPA/subprocessor list on a schedule (e.g. quarterly) and whenever you add a new third-party SDK, AI provider, or payment flow.
+
+| ID | Check | How to verify |
+|----|-------|---------------|
+| L-01 | **Privacy policy discloses what is collected** | N/A if the app collects no personal data. **Pass:** A privacy policy page is linked from signup and the site footer; it lists the personal data the app actually stores (compare DB schema/migrations, signup/profile forms, analytics event payloads). **Fail:** Missing page, lorem ipsum/placeholder, or policy omits fields you persist (email, name, IP, uploads, payment IDs, etc.). **Fix:** Publish an accurate policy and link it consistently. Default severity if fail: **High**. |
+| L-02 | **Privacy policy discloses AI use** | N/A if no user content or personal data is sent to an AI model. **Pass:** Policy states that content/data goes to named providers (OpenAI, Anthropic, Google Gemini, etc.), what is sent, and whether providers may retain or train on it. **Fail:** Code calls LLM APIs with user data but policy is silent or vague. **Fix:** Disclose providers, data categories, retention, and opt-out where applicable; have legal review wording. Default severity if fail: **High**. |
+| L-03 | **Privacy policy names third-party data collectors** | N/A if no third-party collectors run in prod. **Pass:** Every analytics, ad pixel, session replay, error tracking, payment, and AI SDK loaded or called appears in the policy (cross-check `package.json` / `composer.json`, layout script tags, and live network requests). **Fail:** Active `gtag`, PostHog, Sentry, Stripe.js, etc. without a named disclosure. **Fix:** List each vendor and purpose; maintain a subprocessor/DPA list. Default severity if fail: **High**. |
+| L-04 | **Promised deletion actually deletes** | N/A if the app stores no user uploads or accounts to delete. **Pass:** Account/upload delete (or stated retention window) removes objects from object storage and purges CDN/cache within the documented window — not only a DB `deleted_at` / soft-delete flag. Trace the delete handler and storage calls. **Fail:** UI says “deleted” but blobs remain in S3/Supabase/Firebase or public URLs still work. **Fix:** Hard-delete storage; document backup/CDN lag; align policy retention claims with implementation. Default severity if fail: **High**. |
+| L-05 | **No fake testimonials or reviews** | N/A if the marketing site shows no testimonials, ratings, user counts, or “as seen in” logos. **Pass:** Quotes, star ratings, “10k users”, and press logos trace to real customers, measured metrics, or licensed assets (evidence in CMS, analytics, or contracts — not hard-coded fiction). **Fail:** Placeholder names, AI personas, invented numbers, or stock logos presented as real social proof. **Fix:** Remove or replace with verifiable claims; legal review marketing copy. Default severity if fail: **High**. |
+| L-06 | **Cancelling is as easy as signing up** | N/A if there is no paid subscription. **Pass:** Users can cancel online in no more steps than subscribe (self-serve billing portal or in-app cancel); no forced phone call, email-only maze, or repeated dark-pattern retention screens required to stop billing. **Fail:** Subscribe in two clicks; cancel only via support or hidden settings. **Fix:** Expose Stripe/customer portal or equivalent one-flow cancel; mirror signup friction. Default severity if fail: **High**. |
+| L-07 | **Free trials remind before charging** | N/A if no free trial or auto-renewing subscription. **Pass:** Trial signup shows price and first charge date; an email or in-app notification fires before the first charge with an easy cancel path. **Fail:** Silent auto-bill at `trial_end` with no notice. **Fix:** Webhook/email on `trial_will_end` / equivalent; surface cancel in the reminder. Default severity if fail: **Medium**, or **High** if trial users are auto-billed without notice. |
+| L-08 | **AI chat handles self-harm safely** | N/A if no chatbot/companion aimed at consumers (especially minors). **Pass:** Self-harm/suicide messages trigger crisis resources (e.g. 988, local hotlines) and stop the normal conversational flow; bots facing minors disclose they are AI. **Fail:** Generic encouragement, no escalation, or human impersonation without disclosure. **Fix:** Moderation layer, crisis templates, minor-facing AI disclosure; legal review. Default severity if fail: **High**. |
+
+Hunt: `privacy`, `privacy-policy`, `/privacy`, `gtag`, `googletagmanager`, `fbq`, `posthog`, `mixpanel`, `segment`, `hotjar`, `clarity`, `sentry`, `intercom`, `stripe`, `openai`, `anthropic`, `@google/generative-ai`, `deleteObject`, `DeleteObjectCommand`, `storage.from(`, `.remove`, `unlink`, `soft_delete`, `deleted_at`, `testimonial`, `reviews`, `rating`, `trusted by`, `cancel`, `cancel_at_period_end`, `billing portal`, `customer_portal`, `trial_end`, `trial_period_days`, `trial_will_end`, `customer.subscription.trial_will_end`, `suicide`, `self-harm`, `crisis`, `988`, `moderation`.
+
 ---
 
 ## Phase 2 — Live URL and repo probes
@@ -194,6 +215,7 @@ curl -sI http://APP
 curl -sI https://APP/.env
 curl -sI https://APP/.git/HEAD
 curl -sI https://APP/admin
+curl -sI https://APP/privacy
 
 # Deps + secrets (repo)
 npx osv-scanner -r . || npm audit --production
@@ -210,8 +232,8 @@ Record: status code, notable headers (`strict-transport-security`, `content-secu
 | Severity | Use when |
 |----------|----------|
 | Critical | Unauth RCE, auth bypass, world-readable secrets/PII, public admin, SQLi/command injection, service-role in the client |
-| High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth |
-| Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested |
+| High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth, missing or inaccurate privacy policy for data you collect (L-01), undisclosed AI or third-party data sharing (L-02/L-03), delete path that only soft-deletes storage (L-04), fake testimonials or inflated social proof (L-05), subscription cancel harder than signup (L-06), trial auto-bill without prior notice (L-07), unsafe or undisclosed consumer AI chat (L-08) |
+| Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested, trial reminder gaps where notice exists but is weak (L-07) |
 | Low | Info leaks, missing MFA on admin, SRI gaps, incomplete audit logs |
 
 **Verdict**
@@ -242,7 +264,7 @@ Optional `findings.json` envelope:
 
 ```json
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "2.3.0",
   "skill": "vibecode-production",
   "generatedAt": "2026-09-20T00:00:00.000Z",
   "verdict": "NO-GO",
@@ -265,7 +287,8 @@ Optional `findings.json` envelope:
 ## Rules
 
 - Prefer reading real config and routes over guessing.
-- If a stack does not use SQL/RLS/webhooks/LLM/a VPS, mark N/A and say why.
+- If a stack does not use SQL/RLS/webhooks/LLM/a VPS/payments/personal data, mark N/A and say why.
+- Section L checks are compliance hygiene from code and the live site — not legal advice; recommend lawyer review of policy text.
 - Never invent Pass. If unsure, Fail or N/A with what to verify next.
 - After fixes, re-run only the failed items unless the user asks for a full recheck.
 - Do not mark Pass without file:line, config, or a live header/status code.
