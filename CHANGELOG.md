@@ -2,9 +2,8 @@
 
 ## 2.3.0 — 2026-11-04
 
-- **Section K — Legal and compliance:** eight code- and site-verifiable checks (K-01–K-08) for privacy-policy accuracy, AI/subprocessor disclosure, real deletion, truthful marketing, subscription cancel parity, trial billing notice, and safe consumer AI chat — with typical-exposure framing (not legal advice) and a recurring policy review reminder
-- Former **Ops and vibe-coding leftovers** checks re-lettered to **section L** (L-01–L-04) so Legal can use the K prefix
-- Phase 2 adds a polite `/privacy` probe; Phase 3 severity rubric references K failures; `findings.json` `schemaVersion` → 2.3.0
+- **Section L — Legal and compliance:** eight code- and site-verifiable checks (L-01–L-08) for privacy-policy accuracy, AI/subprocessor disclosure, real deletion, truthful marketing, subscription cancel parity, trial billing notice, and safe consumer AI chat — with typical-exposure framing (not legal advice) and a recurring policy review reminder
+- Phase 2 adds a polite `/privacy` probe; Phase 3 severity rubric references L failures; `findings.json` `schemaVersion` → 2.3.0
 
 ## 2.0.0 — 2026-09-20
 

@@ -4,7 +4,7 @@ A Cursor / Claude skill that audits a vibe-coded or AI-generated app before (or 
 
 The original 19-item checklist (RLS, CORS, SQLi, email verify, tokens, `.env`, validation, admin routes, debug, secrets, review pass, rate limits, uploads, logs, password hashing, webhooks, permissions, XSS, dependencies) is preserved and expanded to a stack-aware production-readiness pass: transport headers, CSRF, sessions, JWT/OAuth, SSRF, supply-chain slopsquatting, LLM keys, host exposure, backups, legal/compliance hygiene (privacy, trials, cancel flows, AI chat safety), and leftover `TODO: add auth` / mock auth.
 
-**Skill version:** 2.3.0 — see [`CHANGELOG.md`](CHANGELOG.md) for section K (Legal and compliance) and the full history.
+**Skill version:** 2.3.0 — see [`CHANGELOG.md`](CHANGELOG.md) for section L (Legal and compliance) and the full history.
 
 ## Install
 
