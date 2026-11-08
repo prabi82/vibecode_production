@@ -2,7 +2,9 @@
 
 A Cursor / Claude skill that audits a vibe-coded or AI-generated app before (or after) production deploy.
 
-The original 19-item checklist (RLS, CORS, SQLi, email verify, tokens, `.env`, validation, admin routes, debug, secrets, review pass, rate limits, uploads, logs, password hashing, webhooks, permissions, XSS, dependencies) is preserved and expanded to a stack-aware production-readiness pass: transport headers, CSRF, sessions, JWT/OAuth, SSRF, supply-chain slopsquatting, LLM keys, host exposure, backups, leftover `TODO: add auth` / mock auth, and **section M** — CI/CD release gates, unit/integration tests, repeatable e2e, and performance budgets (~57 checklist items on current `main`; **section L** legal checks are reserved for draft PR #2 until merged).
+The original 19-item checklist (RLS, CORS, SQLi, email verify, tokens, `.env`, validation, admin routes, debug, secrets, review pass, rate limits, uploads, logs, password hashing, webhooks, permissions, XSS, dependencies) is preserved and expanded to a stack-aware production-readiness pass: transport headers, CSRF, sessions, JWT/OAuth, SSRF, supply-chain slopsquatting, LLM keys, host exposure, backups, legal/compliance hygiene (privacy, trials, cancel flows, AI chat safety), leftover `TODO: add auth` / mock auth, and **section M** — CI/CD release gates, unit/integration tests, repeatable e2e, and performance budgets.
+
+**Skill version:** 2.4.0 — see [`CHANGELOG.md`](CHANGELOG.md) for sections L (Legal), M (Testing), and the full history (**77** checklist items, sections A–M).
 
 ## Install
 
@@ -43,4 +45,4 @@ The agent writes `VIBECODE-PRODUCTION.md` (and optional `findings.json`) with a 
 
 ## Credit
 
-v1.0.0 started from the Josh Hoeg-style 19-item vibe-coded security checklist. v2.0.0+ adds the production-readiness domains listed in [`CHANGELOG.md`](CHANGELOG.md) (currently **2.4.0** on this branch; open PRs may carry other semver bumps until merged — e.g. **2.2.x** security/OAuth PR #1, **2.3.0** legal PR #2).
+v1.0.0 started from the Josh Hoeg-style 19-item vibe-coded security checklist. v2.0.0+ adds the production-readiness domains listed in [`CHANGELOG.md`](CHANGELOG.md).
