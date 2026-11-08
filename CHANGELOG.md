@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0 — 2026-11-04
+
+- **Section L — Legal and compliance:** eight code- and site-verifiable checks (L-01–L-08) for privacy-policy accuracy, AI/subprocessor disclosure, real deletion, truthful marketing, subscription cancel parity, trial billing notice, and safe consumer AI chat — with typical-exposure framing (not legal advice) and a recurring policy review reminder
+- Phase 2 adds a polite `/privacy` probe; Phase 3 severity rubric references L failures; `findings.json` `schemaVersion` → 2.3.0
+
 ## 2.2.1 — 2026-10-08
 
 - **F-01** strengthened: rate limits on public ID/search reads (cache-penetration / DB miss floods), per-IP and per-user keys, short TTL negative caching when a cache layer exists; Bloom filters noted as optional only
