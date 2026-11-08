@@ -3,10 +3,11 @@ name: vibecode-production
 description: >-
   Use when reviewing a vibe-coded or AI-generated app before or after production
   deploy: RLS, secrets, auth, XSS, CSRF, headers, rate limits, uploads, webhooks,
-  supply chain, LLM keys, host exposure, legal/compliance hygiene, and leftover mock/TODO auth. Don't use
-  for a deep authorized pentest (use fable-pentest) or a full OWASP practitioner
-  audit with CVSS/ASVS reports (use fable-securityaudit).
-version: 2.3.0
+  supply chain, LLM keys, host exposure, legal/compliance hygiene, leftover mock/TODO
+  auth, and release gates (CI/CD, unit/integration/e2e tests, performance budgets).
+  Don't use for a deep authorized pentest (use fable-pentest) or a full OWASP
+  practitioner audit with CVSS/ASVS reports (use fable-securityaudit).
+version: 2.4.0
 compatibility: cursor, claude
 ---
 
@@ -214,6 +215,21 @@ These checks are **verifiable from code and the live site** — they are not leg
 
 Hunt: `privacy`, `privacy-policy`, `/privacy`, `gtag`, `googletagmanager`, `fbq`, `posthog`, `mixpanel`, `segment`, `hotjar`, `clarity`, `sentry`, `intercom`, `stripe`, `openai`, `anthropic`, `@google/generative-ai`, `deleteObject`, `DeleteObjectCommand`, `storage.from(`, `.remove`, `unlink`, `soft_delete`, `deleted_at`, `testimonial`, `reviews`, `rating`, `trusted by`, `cancel`, `cancel_at_period_end`, `billing portal`, `customer_portal`, `trial_end`, `trial_period_days`, `trial_will_end`, `customer.subscription.trial_will_end`, `suicide`, `self-harm`, `crisis`, `988`, `moderation`.
 
+### M — Testing and release readiness
+
+Release gates and automated tests catch regressions before users do; they **do not** prove security or full correctness (keep running security sections A–K and any applicable L checks). These four items extend — not replace — **G-02** (lockfile installs in CI), **K-01** (SCA/SAST only; not app-level unit/integration coverage), **K-03** (rollback assumes CI exists), and **I-01** (backup restore evidence, not perf budgets).
+
+Mark **N/A** with a reason when the repo is docs-only, has no deploy pipeline, or has no user-facing runtime (static marketing site with no checkout).
+
+| ID | Check | How to verify |
+|----|-------|---------------|
+| M-01 | **Automated release gates** | N/A if nothing is deployed from this repo (pure docs/library with no promotion path). **Pass:** For the environment that receives production traffic, **required** checks on the merge/deploy path include applicable **build**, **typecheck/lint**, and **relevant automated tests** for the change; evidence of **enforcement** — branch protection / deployment rules that block promote on red, plus a **green or intentionally failed-then-fixed run on the proposed commit** (workflow file presence alone is **Fail**). Manual “AI says it works” or unaudited local-only ship does not count. **Fail:** Deploy/promote can proceed with failing checks, checks are optional, or workflows exist but are not required. **Fix:** Wire CI on PR and main; mark checks required; gate Vercel/Netlify/GitHub Actions/harness promote on success. Default severity if fail: **High** when auth, payments, or data-deletion code can ship with bypassable gates; else **Medium**. |
+| M-02 | **Meaningful unit and integration tests** | N/A if no application logic (e.g. static site). **Pass:** Tests cover **risky business rules**, **authorization/validation**, **database or service boundaries**, and **success and failure paths**; include **regression tests** for fixed production bugs where feasible. Assertions are **deterministic** and tests **isolate** side effects (mocks/fixtures/fixture DB) — not mandatory 100% line coverage or vague “all paths” claims without cited tests. **Fail:** No tests on critical handlers, only snapshot/trivial tests, or flaky unordered assertions. **Fix:** Add focused tests at service/API layer; pin regressions. **Evidence:** test file paths and latest local or CI results — missing evidence is not Pass. Default severity if fail: **High** for missing coverage on auth/payments/data-loss paths; else **Medium**. |
+| M-03 | **Repeatable end-to-end tests** | N/A if no multi-step user journeys. **Pass:** **Repeatable** e2e suite (Playwright/Cypress/etc.) covers applicable **critical journeys** — signup/login/password reset, checkout/cancel, account or data deletion — including **failure and unauthorized** cases; uses **isolated staged users** and **sandbox/test payment** modes. Exploratory UI testing by an AI agent may **supplement** but not replace checked-in e2e. **Fail:** Only manual QA, only happy-path smoke, or prod credentials/charges required to audit. **Fix:** Staging project + test users; run e2e in CI or documented pre-release job. **Never** require real production card charges or irreversible production deletion to mark Pass. Default severity if fail: **High** when payments/auth/deletion lack repeatable e2e; else **Medium**. |
+| M-04 | **Performance budgets** | N/A if no performance-sensitive pages/APIs or no documented SLOs. **Pass:** **Documented** budgets for critical user flows (e.g. TTFB, LCP, p95 API latency) name **environment**, **representative workload**, and a **repeatable** measurement method; a **baseline or CI/lighthouse step** enforces or reports against those budgets (not invented universal ms thresholds). **Fail:** No budgets, or load tests only on production without approval. **Fix:** Define budgets in repo docs; run measured checks in staging/CI; avoid unapproved prod stress tests. Default severity if fail: **Medium** (raise if a known slow path blocks core revenue/auth). |
+
+Hunt: `.github/workflows`, `.gitlab-ci`, `circleci`, `vercel.json`, `netlify.toml`, `required_status_checks`, `branch_protection`, `environment: production`, `deploy`, `promote`, `vitest`, `jest`, `pytest`, `phpunit`, `mocha`, `playwright`, `cypress`, `@playwright/test`, `e2e/`, `integration.test`, `__tests__/`, `turbo run test`, `npm test`, `pnpm test`, `coverage`, `lighthouse`, `web-vitals`, `performance-budget`, `k6`, `artillery`, `benchmark`.
+
 ---
 
 ## Phase 2 — Live URL and repo probes
@@ -235,9 +251,13 @@ curl -sI https://APP/privacy
 npx osv-scanner -r . || npm audit --production
 composer audit || pip-audit || true
 gitleaks detect --no-git -v || true
+
+# CI/CD and test signals (repo — enforcement still needs dashboard evidence)
+ls -la .github/workflows 2>/dev/null || true
+rg -l "playwright|cypress|vitest|jest|pytest" --glob '*.{json,yml,yaml,ts,js}' . 2>/dev/null | head
 ```
 
-Record: status code, notable headers (`strict-transport-security`, `content-security-policy`, `access-control-allow-origin`, `set-cookie`, `cache-control`), and whether source maps or verbose errors appear.
+Record: status code, notable headers (`strict-transport-security`, `content-security-policy`, `access-control-allow-origin`, `set-cookie`, `cache-control`), and whether source maps or verbose errors appear. For **M-01**, also record whether required checks exist on the default branch in the hosting/CI UI (screenshot or API export), not only workflow YAML.
 
 ---
 
@@ -246,8 +266,8 @@ Record: status code, notable headers (`strict-transport-security`, `content-secu
 | Severity | Use when |
 |----------|----------|
 | Critical | Unauth RCE, auth bypass, world-readable secrets/PII, public admin, SQLi/command injection, service-role in the client, Google (or other OAuth) login that trusts client-sent `email`/`sub` or an ID token without server-side signature and `iss`/`aud`/`exp`/`email_verified` checks, password hashes or API secrets in API/RSC responses (E-06), public object storage holding backups/config (A-08), agents/automations using human or service-role credentials for prod writes (J-04) |
-| High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth, missing or unvalidated OAuth `state` on Google/social sign-in (callback proceeds without CSRF binding), Google OAuth redirect URIs overly broad or client-controlled without server allowlist, RLS/profile self-update that allows `role`/`plan`/`credits`/`is_admin` bumps (A-07), sensitive routes relying on middleware only (D-12), third-party scripts on login/checkout/admin (B-06), OAuth public client without PKCE (D-13), phishing-capable transactional email HTML (C-06), missing or inaccurate privacy policy for data you collect (L-01), undisclosed AI or third-party data sharing (L-02/L-03), delete path that only soft-deletes storage (L-04), fake testimonials or inflated social proof (L-05), subscription cancel harder than signup (L-06), trial auto-bill without prior notice (L-07), unsafe or undisclosed consumer AI chat (L-08) |
-| Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested, unlimited public lookup-by-ID or search endpoints that hit the database on every nonexistent-ID miss without rate limits (F-01), trial reminder gaps where notice exists but is weak (L-07) |
+| High | IDOR, stored XSS, missing RLS on user data, webhook without signature, origin bypass of CDN, password in git, no rate limit on auth, missing or unvalidated OAuth `state` on Google/social sign-in (callback proceeds without CSRF binding), Google OAuth redirect URIs overly broad or client-controlled without server allowlist, RLS/profile self-update that allows `role`/`plan`/`credits`/`is_admin` bumps (A-07), sensitive routes relying on middleware only (D-12), third-party scripts on login/checkout/admin (B-06), OAuth public client without PKCE (D-13), phishing-capable transactional email HTML (C-06), missing or inaccurate privacy policy for data you collect (L-01), undisclosed AI or third-party data sharing (L-02/L-03), delete path that only soft-deletes storage (L-04), fake testimonials or inflated social proof (L-05), subscription cancel harder than signup (L-06), trial auto-bill without prior notice (L-07), unsafe or undisclosed consumer AI chat (L-08), bypassable or missing release gates on auth/payments/data-loss changes (M-01), no meaningful tests on those paths (M-02), no repeatable e2e for checkout/auth/deletion (M-03) |
+| Medium | Missing headers/HSTS, CSRF on cookie session, verbose errors, weak CSP, lockfile missing, backups untested, unlimited public lookup-by-ID or search endpoints that hit the database on every nonexistent-ID miss without rate limits (F-01), trial reminder gaps where notice exists but is weak (L-07), optional CI only (M-01), test gaps on non-critical code (M-02/M-03), missing or unenforced performance budgets (M-04) |
 | Low | Info leaks, missing MFA on admin, SRI gaps, incomplete audit logs |
 
 **Verdict**
@@ -278,7 +298,7 @@ Optional `findings.json` envelope:
 
 ```json
 {
-  "schemaVersion": "2.3.0",
+  "schemaVersion": "2.4.0",
   "skill": "vibecode-production",
   "generatedAt": "2026-09-20T00:00:00.000Z",
   "verdict": "NO-GO",
@@ -301,9 +321,10 @@ Optional `findings.json` envelope:
 ## Rules
 
 - Prefer reading real config and routes over guessing.
-- If a stack does not use SQL/RLS/webhooks/LLM/a VPS/payments/personal data, mark N/A and say why.
+- If a stack does not use SQL/RLS/webhooks/LLM/a VPS/payments/personal data/deploy CI, mark N/A and say why.
 - Section L checks are compliance hygiene from code and the live site — not legal advice; recommend lawyer review of policy text.
-- Never invent Pass. If unsure, Fail or N/A with what to verify next.
+- Automated tests and green CI **do not** prove security or correctness; they complement A–K and L.
+- Never invent Pass; missing evidence for M items (CI run, test paths, e2e report, budget doc) is not Pass. If unsure, Fail or N/A with what to verify next.
 - After fixes, re-run only the failed items unless the user asks for a full recheck.
 - Do not mark Pass without file:line, config, or a live header/status code.
 - Do not write exploit PoCs. Describe the fix and the missing control.

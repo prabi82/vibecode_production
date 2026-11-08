@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0 — 2026-11-08
+
+- **Section M — Testing and release readiness:** four checks (M-01–M-04) for enforced CI/CD release gates, meaningful unit/integration tests, repeatable e2e on critical journeys (staging/sandbox only), and documented performance budgets with repeatable measurement — with explicit cross-refs to G-02, K-01, K-03, and I-01 so SCA/lockfile/rollback are not mistaken for app test coverage
+- Phase 2 repo probes for workflow/test filenames; Phase 3 severity rubric references M failures; `findings.json` `schemaVersion` → 2.4.0
+- Skill item count **77** (sections A–M)
+
 ## 2.3.0 — 2026-11-04
 
 - **Section L — Legal and compliance:** eight code- and site-verifiable checks (L-01–L-08) for privacy-policy accuracy, AI/subprocessor disclosure, real deletion, truthful marketing, subscription cancel parity, trial billing notice, and safe consumer AI chat — with typical-exposure framing (not legal advice) and a recurring policy review reminder
