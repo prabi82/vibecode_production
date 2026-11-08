@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.0 — 2026-11-08
+
+- **Section M — Testing and release readiness:** four checks (M-01–M-04) for enforced CI/CD release gates, meaningful unit/integration tests, repeatable e2e on critical journeys (staging/sandbox only), and documented performance budgets with repeatable measurement — with explicit cross-refs to G-02, K-01, K-03, and I-01 so SCA/lockfile/rollback are not mistaken for app test coverage
+- Reserved **section L** note on `main` until legal PR merges (draft PR #2, v2.3.0)
+- Phase 2 repo probes for workflow/test filenames; Phase 3 severity rubric references M failures; `findings.json` `schemaVersion` → 2.4.0
+- Skill item count **~57** (A–K plus M; L reserved externally until merged)
+
 ## 2.0.0 — 2026-09-20
 
 Expanded the 19-item vibe-coded security checklist into a stack-aware production-readiness skill (~50 items).
