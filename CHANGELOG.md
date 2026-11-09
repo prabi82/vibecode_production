@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.5.0 — 2026-11-09
+
+- **F-04** strengthened: checkout uses server-side price lookup (plan/Price ID + quantity); ignore client `amount`/`discount`; verify paid amount on webhooks — default **Critical** for client-controlled price
+- **F-06** new: server-side entitlement enforcement (no `localStorage` / client `isPro`; webhook-backed subscription) — default **High**
+- **F-01** expanded: per-user/per-IP quotas and per-recipient cooldown on invite, contact, and other outbound email/SMS sends
+- **A-01** / **E-02** clarified: Supabase **anon** key in the frontend is expected; findings are missing/permissive RLS or **service_role** / secrets in client code
+- Phase 3 severity rubric updated; `findings.json` `schemaVersion` → 2.5.0; checklist item count **78**
+
 ## 2.4.0 — 2026-11-08
 
 - **Section M — Testing and release readiness:** four checks (M-01–M-04) for enforced CI/CD release gates, meaningful unit/integration tests, repeatable e2e on critical journeys (staging/sandbox only), and documented performance budgets with repeatable measurement — with explicit cross-refs to G-02, K-01, K-03, and I-01 so SCA/lockfile/rollback are not mistaken for app test coverage
